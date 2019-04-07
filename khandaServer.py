@@ -104,10 +104,10 @@ class khandaServer:
             print("Error Binding Socket!")
 
 
-    def startWorkers(self):
+    def startWorkers(self,CMDParser = None):
         """Starts worker threads (Network Transmit,Network Receive,Command Worker,Serial Recieve)
         Args:
-            Self
+            CMDParser (function): Custom command parser function, if not specified run default parser
         Returns:
             None
         Raises:
@@ -120,9 +120,14 @@ class khandaServer:
             t = threading.Thread(target=self.TxWorker)
             self.threads.append(t)
             t.start()
-            t = threading.Thread(target=self.CMDWorker)
-            self.threads.append(t)
-            t.start()
+            if CMDParser = None:
+                t = threading.Thread(target=self.CMDWorker)
+                self.threads.append(t)
+                t.start()
+            else:
+                t = threading.Thread(target=self.CMDWorker,args=(CMDParser))
+                self.threads.append(t)
+                t.start()
             if len(self.serialPorts):
                 t = threading.Thread(target=self.SerialRxWorker)
                 self.threads.append(t)
@@ -266,43 +271,57 @@ class khandaServer:
                     self.sock.sendto(Txpacket.data,(Txpacket.recipient,self.port))
                     self.TxQueue.task_done()
         #Add serial tranmission here!
-    def CMDWorker(self):
+    def CMDWorker(self,CMDParser=None):
         """Worker thread function that retrieves data from the Rx message queue and performs specified operation
         Args:
-            Parser : function, custom parser function that decodes khanda_packet and performs operations based on content
+            CMDParser : function, custom parser function that decodes khanda_packet and performs operations based on content, if not specified use default
         Returns:
             data : results of custom parser function
         Raises:
             None
         """
-        while True:
-            if self.RxQueue.empty() is False:
-                RxPacket = self.RxQueue.get()
-                if RxPacket.type == "EVENT":
-                    """Place Event in Event file/queue"""
-                    print("Event Detected")
-                    logfile = open("logfile.txt","a")
-                    FileWrite_Buff = str(RxPacket.type) + "," + str(RxPacket.payload) + "," + str(RxPacket.timestamp) + "\r\n"
-                    logfile.write(str(FileWrite_Buff))
-                    logfile.close()
-                if RxPacket.type == "LED":
-                    if RxPacket.payload == "RED" or RxPacket.payload == "REDOFF":
-                        khanda_Resp = khanda_message("CMD","LED+RED","224.1.1.1",str(time.time()))
-                        khanda_resp_wrapper = khanda_TxWrapper("10.0.0.120",json.dumps(khanda_Resp,cls=JSONEncoder))
-                    elif RxPacket.payload == "GREEN" or RxPacket.payload == "GREENOFF":
-                        khanda_Resp = khanda_message("CMD","LED+GREEN","224.1.1.1",str(time.time()))
-                        khanda_resp_wrapper = khanda_TxWrapper("10.0.0.120",json.dumps(khanda_Resp,cls=JSONEncoder))
-                    elif RxPacket.payload == "BLUE" or RxPacket.payload == "BLUEOFF":
-                        khanda_Resp = khanda_message("CMD","LED+BLUE","224.1.1.1",str(time.time()))
-                        khanda_resp_wrapper = khanda_TxWrapper("10.0.0.120",json.dumps(khanda_Resp,cls=JSONEncoder))
-                    self.TxQueue.put(khanda_resp_wrapper)
-                    logfile = open("logfile.txt","a")
-                    FileWrite_Buff = str(RxPacket.type) + "," + str(RxPacket.payload) + "," + str(RxPacket.timestamp) + "\r\n"
-                    logfile.write(str(FileWrite_Buff))
-                    logfile.close()
-                if RxPacket.type == "HEALTH":
-                    if RxPacket.payload == "UNHEALTHY":
-                        print("DEVICE ERROR RESTART\n")
-                self.RxQueue.task_done()
-            else:
-                continue
+        if CMDParser == None:
+            while True:
+                if self.RxQueue.empty() is False:
+                    RxPacket = self.RxQueue.get()
+                    if RxPacket.type == "EVENT":
+                        """Place Event in Event file/queue"""
+                        print("Event Detected")
+                        logfile = open("logfile.txt","a")
+                        FileWrite_Buff = str(RxPacket.type) + "," + str(RxPacket.payload) + "," + str(RxPacket.timestamp) + "\r\n"
+                        logfile.write(str(FileWrite_Buff))
+                        logfile.close()
+                    if RxPacket.type == "LED":
+                        if RxPacket.payload == "RED" or RxPacket.payload == "REDOFF":
+                            khanda_Resp = khanda_message("CMD","LED+RED","224.1.1.1",str(time.time()))
+                            khanda_resp_wrapper = khanda_TxWrapper("10.0.0.120",json.dumps(khanda_Resp,cls=JSONEncoder))
+                        elif RxPacket.payload == "GREEN" or RxPacket.payload == "GREENOFF":
+                            khanda_Resp = khanda_message("CMD","LED+GREEN","224.1.1.1",str(time.time()))
+                            khanda_resp_wrapper = khanda_TxWrapper("10.0.0.120",json.dumps(khanda_Resp,cls=JSONEncoder))
+                        elif RxPacket.payload == "BLUE" or RxPacket.payload == "BLUEOFF":
+                            khanda_Resp = khanda_message("CMD","LED+BLUE","224.1.1.1",str(time.time()))
+                            khanda_resp_wrapper = khanda_TxWrapper("10.0.0.120",json.dumps(khanda_Resp,cls=JSONEncoder))
+                        self.TxQueue.put(khanda_resp_wrapper)
+                        logfile = open("logfile.txt","a")
+                        FileWrite_Buff = str(RxPacket.type) + "," + str(RxPacket.payload) + "," + str(RxPacket.timestamp) + "\r\n"
+                        logfile.write(str(FileWrite_Buff))
+                        logfile.close()
+                    if RxPacket.type == "HEALTH":
+                        if RxPacket.payload == "UNHEALTHY":
+                            print("DEVICE ERROR RESTART\n")
+                    self.RxQueue.task_done()
+                else:
+                    continue
+        else:
+            try:
+                while True:
+                    if self.RxQueue.empty() is False:
+                        RxPacket = self.RxQueue.get()
+                        khanda_resp_wrapper = CMDParser(RxPacket)
+                        if khanda_resp_wrapper = None:
+                            continue
+                        else:
+                            self.TxQueue.put(khanda_resp_wrapper)
+                        self.RxQueue.task_done()
+            except:
+                print("Invalid Command Parser!")
