@@ -24,8 +24,8 @@ class khandaServer:
         threads (thread list): list of current running threads
         serialPorts (serial list): list of currently opened serial ports
         globalTimeWatchdog (int): timer watchdog for device communications
-        port (int): UDP port number
-        host (string): UDP port address
+        port (int): UDP port number, default 5007
+        host (string): UDP port address, default 224.1.1.1
         sock (socket): UDP socket object
         logfile (FILE): Output logfile
     Methods:
