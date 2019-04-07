@@ -312,12 +312,15 @@ class khandaServer:
         while True:
             writeable = [self.sock]
             read,write,exception = select.select([],writeable,[],0)
-            for writeable_socket in write:
-                if self.TxQueue.empty() is False:
-                    Txpacket = self.TxQueue.get()
+            if self.TxQueue.empty() is False and len(writeable_socket):
+                Txpacket = self.TxQueue.get()
+                for writeable_socket in write:
                     self.sock.sendto(Txpacket.data,(Txpacket.recipient,self.port))
-                    self.TxQueue.task_done()
-        #Add serial tranmission here!
+                for port in self.serialPorts:
+                    port.write(TxPacket.data)
+                self.TxQueue.task_done()
+            else:
+                continue
     def CMDWorker(self,CMDParser=None):
         """Worker thread function that retrieves data from the Rx message queue and performs specified operation
         Args:

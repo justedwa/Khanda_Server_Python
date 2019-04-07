@@ -37,7 +37,7 @@ Methods:
     volts_setpoint_get():        Returns current setpoint from power supply
     volts_meas():                Returns the output current measurement from the power supply
     status_get():                Returns the power supply status flags
-    
+
 """
     def __init__(self,PSU_PORT):
         self.ser1 = PSU_PORT
