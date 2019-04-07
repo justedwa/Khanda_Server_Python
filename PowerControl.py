@@ -20,10 +20,28 @@ import serial
 import time
 
 class PSU_Device:
+"""
+This is a class for accessing Variable PSU control (TP3005P)
 
+Attributes:
+    ser1 (Serial object): serial port of attached PSU device
+Methods:
+    __init__: Creates PSU object from specified port
+    init_comm(port_name):        Opens named com port and initializes comm
+    end_comm():                  Closes comm port
+    output_state(out_on):        If state is < 1 then output is turned off.  Otherwise, it is turned on.
+    volts_setpoint_set(volts):   Sets output voltage to volts
+    volts_setpoint_get():        Returns voltage setpoint from power supply
+    volts_meas():                Returns the output voltage measurement from the power supply
+    amps_setpoint_set(amps):     Sets output current (limit) to amps
+    volts_setpoint_get():        Returns current setpoint from power supply
+    volts_meas():                Returns the output current measurement from the power supply
+    status_get():                Returns the power supply status flags
+    
+"""
     def __init__(self,PSU_PORT):
         self.ser1 = PSU_PORT
-        
+
     def output_state(out_on):
         time.sleep(0.05)
         if out_on >= 1:
