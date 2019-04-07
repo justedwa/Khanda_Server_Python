@@ -2,6 +2,18 @@
 import json
 
 class khanda_message(object):
+    """
+    This is a class for storing data fetched from JSON strings
+
+    Attributes:
+        type (string): packet type (CMD,RESP,etc.)
+        payload (string): packet payload
+        recipient (string): destination
+        timestamp (int): timestamp appended upon sending
+    Methods:
+        __init__: Creates khanda_message object
+        __json__: Object JSON decoder function
+    """
     def __init__(self,type,payload,recipient,timestamp):
         """Initializes the khanda_message object
         Args:
@@ -32,18 +44,22 @@ class khanda_message(object):
 
 
 class khanda_TxWrapper:
+    """
+    This is a class for wrapping decoded khanda_message object for tranmission worker
+    Attributes:
+        data (string): JSON serialized khanda_message object
+        recipient (string): recipient IP address
+    Methods:
+        __init__: create wrapper object
+    """
     def __init__(self,recipient,JSONMSG):
         self.recipient = recipient
         self.data = JSONMSG
 
 class JSONEncoder(json.JSONEncoder):
     """Serializes object into JSON format, if object has __json__ function invoke that function for encoding
-    Args:
-        None
-    Returns:
-        None
-    Raises:
-        Error if object does not follow expected JSON formatting
+    Methods:
+        default: default JSON object encoder function
     """
     def default(self,obj):
         """Serializes object into JSON format, if object has __json__ function invoke that function for encoding
