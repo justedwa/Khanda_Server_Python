@@ -10,6 +10,7 @@ from Queue import *
 #3rd Party Imports
 import serial
 #Local Imports
+from PowerControl import *
 from khanda_structs import *
 
 class khandaServer:
@@ -28,6 +29,8 @@ class khandaServer:
         host (string): UDP port address, default 224.1.1.1
         sock (socket): UDP socket object
         logfile (FILE): Output logfile
+        PSU_PORT (string): address of power supply serial port
+        PSU_DEV (PSU_Device): PSU_Device object that gives user access to power control if attached
     Methods:
         __init__: Creates khanda_server object and Initializes Attributes
         serial_start: creates serial port connection
@@ -40,6 +43,8 @@ class khandaServer:
         RxWorker: Worker thread for retrieving data from the UDP socket, placed in RxQueue
         TxWorker: Worker thread for transmitting data contained in the TxQueue
         CMDWorker: Worker thread for parsing data from the RxQueue
+        attach_PSU: Add PSU device to system and open serial port
+        detach_PSU: Remove and Close PSU Device object and serial port
     """
     def __init__(self,MCAST_GRP=None,MCAST_PORT=None,sock=None):
         """Intialize the KhandaServer Object.
@@ -55,6 +60,8 @@ class khandaServer:
         self.threads = []
         self.serialPorts = []
         self.globalTimeWatchdog = 0
+        self.PSU_PORT = None
+        self.PSU_DEV = None
         if MCAST_PORT is None:
             self.port = 5007
         else:
@@ -69,6 +76,47 @@ class khandaServer:
 
 
 
+    def attach_PSU(self,SERIAL_PORT):
+        """Initializes serial port and create a PSU_Device object for use in power control
+        Args:
+            SERIAL_PORT: string, address of the serial port of PSU (COMx /dev/ttyUSBx)
+        Returns:
+            0: Successful initialization
+            -1: Error opening port
+        Raises:
+            Error if serial parameters are invalid
+        """
+        try:
+            self.PSU_PORT = serial.Serial(SERIAL_PORT,9600,timeout=1)
+            self.PSU_DEV = PSU_Device(self.PSU_PORT)
+            return 0
+        except:
+            print("Error Opening PSU Port!")
+            return -1
+
+    def detach_PSU(self):
+        """Detaches PSU_Device from the system and destroys object
+        Args:
+            None
+        Returns:
+             0: Successful detachment
+            -1: No PSU Device to close
+            -2: Error closing port
+        Raises:
+            Error if Port unable to close
+            Error if no PSU object attached
+        """
+        if self.PSU_PORT is None:
+            print("No PSU Attached!")
+            return -1
+        else:
+            try:
+                self.PSU_PORT.close()
+                self.PSU_DEV = None
+                return 0
+            except:
+                print("Error Closing PSU Port!")
+                return -2
 
     def serial_start(self,SERIAL_PORT,BAUD=9600):
         """Initializes serial port and starts the serial recieve thread
@@ -81,7 +129,7 @@ class khandaServer:
             Error if serial parameters are invalid
         """
         try:
-            port = serial.Serial(SERIAL_PORT,BAUD,timeout=0)
+            port = serial.Serial(SERIAL_PORT,BAUD,timeout=1)
             self.serialPorts.append(port)
         except:
             print("Invalid Serial port parameters")
