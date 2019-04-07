@@ -47,7 +47,6 @@ class khandaServer:
             MCAST_GRP: Slave device multicast group
             MCAST_PORT: Port for server to listen on
             sock: socket object to use, default value generates socket object
-            SerialPT: Optional serial port to listen on for slave devices communicating over serial
         """
         self.MSGLEN = 512
         self.RxQueue =  Queue()
@@ -120,7 +119,7 @@ class khandaServer:
             t = threading.Thread(target=self.TxWorker)
             self.threads.append(t)
             t.start()
-            if CMDParser = None:
+            if CMDParser is None:
                 t = threading.Thread(target=self.CMDWorker)
                 self.threads.append(t)
                 t.start()
@@ -280,7 +279,7 @@ class khandaServer:
         Raises:
             None
         """
-        if CMDParser == None:
+        if CMDParser is None:
             while True:
                 if self.RxQueue.empty() is False:
                     RxPacket = self.RxQueue.get()
@@ -318,7 +317,7 @@ class khandaServer:
                     if self.RxQueue.empty() is False:
                         RxPacket = self.RxQueue.get()
                         khanda_resp_wrapper = CMDParser(RxPacket)
-                        if khanda_resp_wrapper = None:
+                        if khanda_resp_wrapper is None:
                             continue
                         else:
                             self.TxQueue.put(khanda_resp_wrapper)
