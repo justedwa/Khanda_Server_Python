@@ -6,6 +6,7 @@ import select
 import json
 import struct
 import re
+import sys
 from Queue import *
 #3rd Party Imports
 import serial
@@ -93,7 +94,7 @@ class khandaServer:
             self.PSU_DEV = PSU_Device(self.PSU_PORT)
             return 0
         except:
-            print("Error Opening PSU Port!")
+            sys.stderr.write("Error Opening PSU Port!")
             return -1
 
     def detach_PSU(self):
@@ -109,7 +110,7 @@ class khandaServer:
             Error if no PSU object attached
         """
         if self.PSU_PORT is None:
-            print("No PSU Attached!")
+            sys.stderr.write("No PSU Attached!")
             return -1
         else:
             try:
@@ -117,7 +118,7 @@ class khandaServer:
                 self.PSU_DEV = None
                 return 0
             except:
-                print("Error Closing PSU Port!")
+                sys.stderr.write("Error Closing PSU Port!")
                 return -2
 
     def serial_start(self,SERIAL_PORT,BAUD=9600):
@@ -134,7 +135,7 @@ class khandaServer:
             port = serial.Serial(SERIAL_PORT,BAUD,timeout=1)
             self.serialPorts.append(port)
         except:
-            print("Invalid Serial port parameters")
+            sys.stderr.write("Invalid Serial port parameters")
 
     def connect(self):
         """Binds Khanda Server to UDP socket and listens
@@ -150,7 +151,7 @@ class khandaServer:
             mreq = struct.pack("4sl", socket.inet_aton(self.host), socket.INADDR_ANY)
             self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         except:
-            print("Error Binding Socket!")
+            sys.stderr.write("Error Binding Socket!")
 
 
     def startWorkers(self,CMDParser = None):
@@ -184,7 +185,7 @@ class khandaServer:
             else:
                 continue
         except:
-            print("Unable to start worker threads!")
+            sys.stderr.write("Unable to start worker threads!")
 
 
     def stopWorkers(self):
@@ -203,11 +204,11 @@ class khandaServer:
             for port in self.serialPorts:
                 port.close()
         except:
-            print("Unable to stop working threads!")
+            sys.stderr.write("Unable to stop working threads!")
         try:
             self.logfile.close()
         except:
-            print("Unable to close logfile!")
+            sys.stderr.write("Unable to close logfile!")
 
     def set_MSGLEN(self,length):
         """Sets message length for khanda packets
@@ -236,7 +237,7 @@ class khandaServer:
             self.TxQueue.put(newCommand_wrapper)
             return 0
         except:
-            print("Unable to Process Command")
+            sys.stderr.write("Unable to Process Command")
             return -1
 
     def SerialRxWorker(self):
@@ -268,7 +269,7 @@ class khandaServer:
                             else:
                                 del khanda_packet
                         except:
-                            print("Invalid Packet Structure")
+                            sys.stderr.write("Invalid Packet Structure")
                     except:
                         return
 
@@ -299,7 +300,7 @@ class khandaServer:
                     else:
                         del khanda_packet
                 except:
-                    print("Invalid Packet Structure")
+                    sys.stderr.write("Invalid Packet Structure")
             continue
 
     def TxWorker(self):
@@ -338,7 +339,7 @@ class khandaServer:
                     RxPacket = self.RxQueue.get()
                     if RxPacket.type == "EVENT":
                         """Place Event in Event file/queue"""
-                        print("Event Detected")
+                        #print("Event Detected")
                         logfile = open("logfile.txt","a")
                         FileWrite_Buff = str(RxPacket.type) + "," + str(RxPacket.payload) + "," + str(RxPacket.timestamp) + "\r\n"
                         logfile.write(str(FileWrite_Buff))
@@ -360,7 +361,7 @@ class khandaServer:
                         logfile.close()
                     if RxPacket.type == "HEALTH":
                         if RxPacket.payload == "UNHEALTHY":
-                            print("DEVICE ERROR RESTART\n")
+                            sys.stderr.write("DEVICE ERROR RESTART")
                     if RxPacket.type = "DEVICE":
                         type,IP = RxPacket.data.split("+")
                         device = []
@@ -386,4 +387,4 @@ class khandaServer:
                             self.TxQueue.put(khanda_resp_wrapper)
                         self.RxQueue.task_done()
             except:
-                print("Invalid Command Parser!")
+                sys.stderr.write("Invalid Command Parser!")
