@@ -31,6 +31,7 @@ class khandaServer:
         logfile (FILE): Output logfile
         PSU_PORT (string): address of power supply serial port
         PSU_DEV (PSU_Device): PSU_Device object that gives user access to power control if attached
+        Attached_Devices (2D-String array): Device & IP pairs of devices communicating with system
     Methods:
         __init__: Creates khanda_server object and Initializes Attributes
         serial_start: creates serial port connection
@@ -62,6 +63,7 @@ class khandaServer:
         self.globalTimeWatchdog = 0
         self.PSU_PORT = None
         self.PSU_DEV = None
+        self.Attached_Devices = []
         if MCAST_PORT is None:
             self.port = 5007
         else:
@@ -359,6 +361,16 @@ class khandaServer:
                     if RxPacket.type == "HEALTH":
                         if RxPacket.payload == "UNHEALTHY":
                             print("DEVICE ERROR RESTART\n")
+                    if RxPacket.type = "DEVICE":
+                        type,IP = RxPacket.data.split("+")
+                        device = []
+                        device.append(type)
+                        device.append(IP)
+                        self.Attached_Devices.append(device)
+                        khanda_Resp = khanda_message("ACKDEV","SUCCESS",IP,str(time.time()))
+                        khanda_resp_wrapper = khanda_TxWrapper(IP,json.dumps(khanda_Resp,cls=JSONEncoder))
+                        self.TxQueue.put(khanda_resp_wrapper)
+                        del device
                     self.RxQueue.task_done()
                 else:
                     continue
