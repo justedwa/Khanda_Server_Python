@@ -324,6 +324,7 @@ class khandaServer:
                 self.TxQueue.task_done()
             else:
                 continue
+
     def CMDWorker(self,CMDParser=None):
         """Worker thread function that retrieves data from the Rx message queue and performs specified operation
         Args:
@@ -362,7 +363,7 @@ class khandaServer:
                     if RxPacket.type == "HEALTH":
                         if RxPacket.payload == "UNHEALTHY":
                             sys.stderr.write("DEVICE ERROR RESTART")
-                    if RxPacket.type = "DEVICE":
+                    if RxPacket.type == "DEVICE":
                         type,IP = RxPacket.data.split("+")
                         device = []
                         device.append(type)
